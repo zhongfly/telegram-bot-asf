@@ -218,7 +218,7 @@ def others(bot, update, chat_data):
             update.message.reply_text(text='KEY输入错误，请重新输入', quote=True)
             return OTHERS
     elif chat_data['type'] == 'addlicense':
-        if pattern_key.match(args) == None:
+        if pattern_id.match(args) == None:
             update.message.reply_text(
                 text='appID 或者 subID输入错误，请重新输入', quote=True)
             return OTHERS
