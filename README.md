@@ -17,6 +17,6 @@
 ![直接发送命令（以status为例）](https://i.loli.net/2018/03/14/5aa8bfaa0f17f.jpg)  
   
 方法2，发送 /start 命令给bot，进入按键交互，按提示即可管理asf（注，若2min未回复bot，bot将自动取消操作，同时你也可以发送 /cancel 来手动取消）  
-![InlineKeyboard1](https://i.loli.net/2018/03/14/5aa8bf6f4131a.jpg)  
-![InlineKeyboard2](https://i.loli.net/2018/03/14/5aa8bf6f49069.jpg)  
-![InlineKeyboard3](https://i.loli.net/2018/03/14/5aa8bf6f4ea21.jpg)  
+![选择命令](https://i.loli.net/2018/03/14/5aa8bf6f49069.jpg)  
+![选择bot](https://i.loli.net/2018/03/14/5aa8bf6f4131a.jpg)  
+![发送KEY或取消](https://i.loli.net/2018/03/14/5aa8bf6f4ea21.jpg)  
