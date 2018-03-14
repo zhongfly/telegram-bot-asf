@@ -11,7 +11,7 @@ token = '987654321:XXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 admin = [123456789]  # 多位管理员则为[123456789,987654321]
 ipc_address = 'http://127.0.0.1:1242/'
 ipc_password = ''
-use_proxy = True#如果不使用代理则为False
+use_proxy = True  # 如果不使用代理则为False
 proxy = 'socks5://127.0.0.1:1080/'  # 'http://127.0.0.1:3128'
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -71,19 +71,20 @@ def send(command):
     return res
 
 
-def bots_menu(header=True,n_cols=4):
+def bots_menu(header=True, n_cols=4):
     bots = api.get_bot('ASF')
     buttons = []
     for i in bots:
-        buttons.append(InlineKeyboardButton(text=i['BotName'], callback_data=i['BotName']))
+        buttons.append(InlineKeyboardButton(
+            text=i['BotName'], callback_data=i['BotName']))
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     header_button = [InlineKeyboardButton(
-        text='ASF（即所有bot）', callback_data='asf'),]
-    if header==True:
+        text='ASF（即所有bot）', callback_data='asf'), ]
+    if header == True:
         menu.insert(0, header_button)
-    footer_button = [InlineKeyboardButton(text='返回', callback_data='back'),]
+    footer_button = [InlineKeyboardButton(text='返回', callback_data='back'), ]
     menu.append(footer_button)
-    reply_markup=InlineKeyboardMarkup(menu)
+    reply_markup = InlineKeyboardMarkup(menu)
     return reply_markup
 
 
@@ -94,7 +95,7 @@ def deljob(chat_data):
     if 'job' in chat_data:
         job = chat_data['job']
         job.schedule_removal()
-        del chat_data['job']    
+        del chat_data['job']
 
 
 def timeout(bot, job):
@@ -130,12 +131,12 @@ def cmdtype(bot, update, job_queue, chat_data):
         return ConversationHandler.END
     chat_data['type'] = query.data
     if cmd_type in type1 or cmd_type in type2:
-        if cmd_type=='redeem':
-            reply_markup=bots_menu(header=False)
+        if cmd_type == 'redeem':
+            reply_markup = bots_menu(header=False)
         else:
-            reply_markup=bots_menu()
+            reply_markup = bots_menu()
         bot.editMessageText(
-            chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出',reply_markup=reply_markup)
+            chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
 #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
         job = job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
@@ -154,7 +155,7 @@ def botname(bot, update, job_queue, chat_data):
     deljob(chat_data)
     if query.data == 'back':
         bot.editMessageText(
-            chat_id=chat_id, message_id=chat_data['msg'], text='请选择命令\n发送 /cancel 退出',reply_markup=cmd_menu)
+            chat_id=chat_id, message_id=chat_data['msg'], text='请选择命令\n发送 /cancel 退出', reply_markup=cmd_menu)
 #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=cmd_menu)
         job = job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
@@ -162,14 +163,15 @@ def botname(bot, update, job_queue, chat_data):
         return TYPE
     chat_data['bot'] = query.data
     if chat_data['type'] in type1:
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton(text='返回', callback_data='back'),],])
+        reply_markup = InlineKeyboardMarkup(
+            [[InlineKeyboardButton(text='返回', callback_data='back'), ], ])
         if chat_data['type'] == 'redeem':
             text = '当前操作的BOT为: ' + chat_data['bot'] + \
                 ',\n请输入KEY!\n发送 /cancel 退出'
         elif chat_data['type'] == 'addlicense':
             text = '请输入appID 或者 subID !\n发送 /cancel 退出'
         bot.editMessageText(
-            chat_id=chat_id, message_id=chat_data['msg'], text=text,reply_markup=reply_markup)
+            chat_id=chat_id, message_id=chat_data['msg'], text=text, reply_markup=reply_markup)
 #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
         job = job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
@@ -190,10 +192,10 @@ def back2botname(bot, update, job_queue, chat_data):
     deljob(chat_data)
     query = update.callback_query
     chat_id = query.message.chat_id
-    if chat_data['type'] =='redeem':
-        reply_markup=bots_menu(header=False)
+    if chat_data['type'] == 'redeem':
+        reply_markup = bots_menu(header=False)
     else:
-        reply_markup=bots_menu()
+        reply_markup = bots_menu()
     bot.editMessageText(
         chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
 #    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
@@ -206,6 +208,11 @@ def others(bot, update, chat_data):
     deljob(chat_data)
     chat_id = update.message.chat_id
     args = update.message.text
+    if 'msg' in chat_data:
+        msg = chat_data['msg']
+        bot.editMessageText(chat_id=chat_id, message_id=msg,
+                            text='已选择BOT\n发送 /cancel 退出')
+        del chat_data['msg']
     if chat_data['type'] == 'redeem':
         if pattern_key.match(args) == None:
             update.message.reply_text(text='KEY输入错误，请重新输入', quote=True)
@@ -255,7 +262,7 @@ def reply(bot, update, job_queue):
     chat_id = update.message.chat_id
     command = update.message.text
     res = send(command)
-    msg=update.message.reply_text(text=res, quote=True)
+    msg = update.message.reply_text(text=res, quote=True)
     if pattern_2fa.match(command):
         job_queue.run_once(mfa_timeout, 15, context=(chat_id, msg.message_id))
 
@@ -265,7 +272,8 @@ def error(bot, update, error):
 
 
 updater.dispatcher.add_handler(start_handler)
-updater.dispatcher.add_handler(MessageHandler(Filters.text, reply, pass_job_queue=True))
+updater.dispatcher.add_handler(MessageHandler(
+    Filters.text, reply, pass_job_queue=True))
 updater.dispatcher.add_error_handler(error)
 
 updater.start_polling()
