@@ -211,7 +211,7 @@ def others(bot, update, chat_data):
     if 'msg' in chat_data:
         msg = chat_data['msg']
         bot.editMessageText(chat_id=chat_id, message_id=msg,
-                            text='已选择BOT\n发送 /cancel 退出')
+                            text='已输入\n发送 /cancel 退出')
         del chat_data['msg']
     if chat_data['type'] == 'redeem':
         if pattern_key.match(args) == None:
