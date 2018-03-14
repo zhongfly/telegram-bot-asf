@@ -4,7 +4,7 @@
 参考[deluxghost/telegram-asf](https://github.com/deluxghost/telegram-asf)，[BenZinaDaze/tg_asf_bot](https://github.com/BenZinaDaze/tg_asf_bot)  
 
 # 准备
-1,安装python3.6  
+1,安装python3.6  
 2,创建telegram bot,获取token  
 3,git clone https://github.com/zhongfly/telegram-bot-asf.git  
 4,如使用socks代理，按注释修改requirments  
