@@ -8,9 +8,9 @@
 2,创建telegram bot,获取token  
 3,git clone https://github.com/zhongfly/telegram-bot-asf.git  
 4,如使用socks代理，按注释修改requirments  
-5,安装依赖 pip install -r requirements.txt  
+5,安装依赖 pip install -r requirements.txt  
 6,在telegram-asf.py中按注释修改token，admin，ipc_address，ipc_password，use_proxy，proxy  
-7,运行telegram-asf.py
+7,运行telegram-asf.py  
 
 # 使用
 方法1，直接发送ASF的command命令给bot，bot会回复结果。  
