@@ -80,7 +80,7 @@ def bots_menu(header=True, n_cols=4):
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     header_button = [InlineKeyboardButton(
         text='ASF（即所有bot）', callback_data='asf'), ]
-    if header == True or len(buttons) > 1 :
+    if header == True and len(buttons) > 1 :
         menu.insert(0, header_button)
     footer_button = [InlineKeyboardButton(text='返回', callback_data='back'), ]
     menu.append(footer_button)
