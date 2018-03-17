@@ -80,7 +80,7 @@ def bots_menu(header=True, n_cols=4):
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     header_button = [InlineKeyboardButton(
         text='ASF（即所有bot）', callback_data='asf'), ]
-    if header == True:
+    if header == True or len(buttons) > 1 :
         menu.insert(0, header_button)
     footer_button = [InlineKeyboardButton(text='返回', callback_data='back'), ]
     menu.append(footer_button)
@@ -100,7 +100,7 @@ def deljob(chat_data):
 
 def timeout(bot, job):
     bot.editMessageText(
-        chat_id=job.context[0], message_id=job.context[1], text='已结束等待')
+        chat_id=job.context[0], message_id=job.context[1], text='2min无回应\n已结束等待')
     return -1
 
 
