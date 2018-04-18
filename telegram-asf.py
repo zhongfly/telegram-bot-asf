@@ -68,24 +68,29 @@ def send(command):
             res = e.__class__.__name__
     if not isinstance(res, str):
         res = str(res)
+    logger.info("执行命令：{}\n结果为：{}".format(command, res))
     return res
 
 
 def bots_menu(header=True, n_cols=4):
     bots = api.get_bot('ASF')
-    buttons = []
-    for i in bots:
-        buttons.append(InlineKeyboardButton(
-            text=i['BotName'], callback_data=i['BotName']))
-    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-    header_button = [InlineKeyboardButton(
-        text='ASF（即所有bot）', callback_data='asf'), ]
-    if header == True and len(buttons) > 1 :
-        menu.insert(0, header_button)
-    footer_button = [InlineKeyboardButton(text='返回', callback_data='back'), ]
-    menu.append(footer_button)
-    reply_markup = InlineKeyboardMarkup(menu)
-    return reply_markup
+    if len(bots) == 1:
+        return bots[0]['BotName']
+    else:
+        buttons = []
+        for i in bots:
+            buttons.append(InlineKeyboardButton(
+                text=i['BotName'], callback_data=i['BotName']))
+        menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+        header_button = [InlineKeyboardButton(
+            text='ASF（即所有bot）', callback_data='asf'), ]
+        if header == True:
+            menu.insert(0, header_button)
+        footer_button = [InlineKeyboardButton(
+            text='返回', callback_data='back'), ]
+        menu.append(footer_button)
+        reply_markup = InlineKeyboardMarkup(menu)
+        return reply_markup
 
 
 TYPE, BOTNAME, OTHERS = range(3)
@@ -106,6 +111,7 @@ def timeout(bot, job):
 
 @restricted
 def start(bot, update, job_queue, chat_data):
+    logger.info("%s 开始会话。", update.message.from_user.first_name)
     chat_id = update.message.chat_id
     msg = bot.sendMessage(text='请选择命令\n发送 /cancel 退出',
                           chat_id=chat_id, reply_markup=cmd_menu)
@@ -135,13 +141,17 @@ def cmdtype(bot, update, job_queue, chat_data):
             reply_markup = bots_menu(header=False)
         else:
             reply_markup = bots_menu()
-        bot.editMessageText(
-            chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
-#        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
-        job = job_queue.run_once(
-            timeout, 120, context=(chat_id, chat_data['msg']))
-        chat_data['job'] = job
-        return BOTNAME
+        if isinstance(reply_markup, str):
+            chat_data['bot'] = reply_markup
+            return deal_command(bot, chat_id, job_queue, chat_data)
+        else:
+            bot.editMessageText(
+                chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
+    #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
+            job = job_queue.run_once(
+                timeout, 120, context=(chat_id, chat_data['msg']))
+            chat_data['job'] = job
+            return BOTNAME
     else:
         res = send(cmd_type)
         bot.editMessageText(
@@ -162,6 +172,10 @@ def botname(bot, update, job_queue, chat_data):
         chat_data['job'] = job
         return TYPE
     chat_data['bot'] = query.data
+    return deal_command(bot, chat_id, job_queue, chat_data)
+
+
+def deal_command(bot, chat_id, job_queue, chat_data):
     if chat_data['type'] in type1:
         reply_markup = InlineKeyboardMarkup(
             [[InlineKeyboardButton(text='返回', callback_data='back'), ], ])
