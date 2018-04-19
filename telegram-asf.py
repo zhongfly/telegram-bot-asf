@@ -141,6 +141,7 @@ def cmdtype(bot, update, job_queue, chat_data):
             reply_markup = bots_menu(header=False)
         else:
             reply_markup = bots_menu()
+        chat_data['botname_markup'] = reply_markup
         if isinstance(reply_markup, str):
             chat_data['bot'] = reply_markup
             return deal_command(bot, chat_id, job_queue, chat_data)
@@ -206,16 +207,22 @@ def back2botname(bot, update, job_queue, chat_data):
     deljob(chat_data)
     query = update.callback_query
     chat_id = query.message.chat_id
-    if chat_data['type'] == 'redeem':
-        reply_markup = bots_menu(header=False)
+    reply_markup = chat_data['botname_markup']
+    if isinstance(reply_markup, str):
+        bot.editMessageText(text='请选择命令\n发送 /cancel 退出',
+                            chat_id=chat_id, message_id=chat_data['msg'], reply_markup=cmd_menu)
+        job = job_queue.run_once(
+            timeout, 120, context=(chat_id, chat_data['msg']))
+        chat_data['job'] = job
+        return TYPE
     else:
-        reply_markup = bots_menu()
-    bot.editMessageText(
-        chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
-#    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
-    job = job_queue.run_once(timeout, 120, context=(chat_id, chat_data['msg']))
-    chat_data['job'] = job
-    return BOTNAME
+        bot.editMessageText(
+            chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
+    #    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
+        job = job_queue.run_once(
+            timeout, 120, context=(chat_id, chat_data['msg']))
+        chat_data['job'] = job
+        return BOTNAME
 
 
 def others(bot, update, chat_data):
