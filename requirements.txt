@@ -1,4 +1,4 @@
-#如果使用socks代理，请去掉下一行的注释
+#濡傛灉浣跨敤socks浠ｇ悊锛岃鍘绘帀涓嬩竴琛岀殑娉ㄩ噴
 #pysocks
 python-telegram-bot>=10.0.0
 ASF_IPC>=1.1.1
