@@ -38,7 +38,7 @@ cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='2fa', callback_data='2fa'),
      InlineKeyboardButton(text='2faok', callback_data='2faok'),
      InlineKeyboardButton(text='version', callback_data='version'),
-     InlineKeyboardButton(text='status', callback_data='status')],
+     InlineKeyboardButton(text='status', callback_data='status ASF')],
     [InlineKeyboardButton(text='取消', callback_data='cancel')]
 ])
 
