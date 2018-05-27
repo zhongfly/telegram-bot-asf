@@ -1,5 +1,5 @@
 # encoding:UTF-8
-#如果使用socks代理，请去掉下一行的注释
+#if you want to use socks proxy,remove the # in the next line
 #pysocks
 python-telegram-bot>=10.0.0
 ASF_IPC>=1.1.1
