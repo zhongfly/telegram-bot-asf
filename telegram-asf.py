@@ -12,7 +12,7 @@ admin = [123456789]  # 多位管理员则为[123456789,987654321]
 ipc_address = 'http://127.0.0.1:1242/'
 ipc_password = ''
 use_proxy = True  # 如果不使用代理则为False
-proxy = 'socks5://127.0.0.1:1080/'  # 'http://127.0.0.1:3128'
+proxy = 'socks5h://127.0.0.1:1080/'  # 'http://127.0.0.1:3128'
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
