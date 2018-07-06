@@ -1,5 +1,5 @@
 # encoding:UTF-8
 #if you want to use socks proxy,remove the # in the next line
 #pysocks
-python-telegram-bot>=10.0.0
+python-telegram-bot>=10.1.0
 ASF_IPC>=1.1.1
