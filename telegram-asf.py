@@ -75,10 +75,11 @@ def send(command):
 def bots_menu(header=True, n_cols=4):
     bots = api.get_bot('ASF')
     if len(bots) == 1:
-        return bots[0]['BotName']
+        key=list(bots.keys())[0]
+        return bots[key]['BotName']
     else:
         buttons = []
-        for i in bots:
+        for i in bots.values():
             buttons.append(InlineKeyboardButton(
                 text=i['BotName'], callback_data=i['BotName']))
         menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
@@ -134,6 +135,7 @@ def cmdtype(bot, update, job_queue, chat_data):
     if query.data == 'cancel':
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text='已取消')
+        logger.info("取消操作，结束会话。")
         return ConversationHandler.END
     chat_data['type'] = query.data
     if cmd_type in type1 or cmd_type in type2:
@@ -251,8 +253,7 @@ def others(bot, update, chat_data):
 
 def cancel(bot, update, chat_data):
     deljob(chat_data)
-    user = update.message.from_user
-    logger.info("%s 取消操作，结束会话。", user.first_name)
+    logger.info("%s 取消操作，结束会话。", update.message.from_user.first_name)
     update.message.reply_text('已取消', quote=True)
     return ConversationHandler.END
 
