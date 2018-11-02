@@ -1,7 +1,6 @@
 # telegram-bot-asf
 使用telegram bot管理ASF  
-基于[ASF_IPC](https://github.com/deluxghost/ASF_IPC)  
-参考[deluxghost/telegram-asf](https://github.com/deluxghost/telegram-asf)，[BenZinaDaze/tg_asf_bot](https://github.com/BenZinaDaze/tg_asf_bot)  
+参考[ASF_IPC](https://github.com/deluxghost/ASF_IPC)，[deluxghost/telegram-asf](https://github.com/deluxghost/telegram-asf)，[BenZinaDaze/tg_asf_bot](https://github.com/BenZinaDaze/tg_asf_bot)  
 
 # 准备
 1,安装python3.6  
