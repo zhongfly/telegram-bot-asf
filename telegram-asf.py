@@ -5,7 +5,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import wraps
 import logging
 import re
-import ASF_IPC as asf
+import requests
+from urllib.parse import urljoin
 
 token = '987654321:XXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 admin = [123456789]  # 多位管理员则为[123456789,987654321]
@@ -24,8 +25,6 @@ if use_proxy == True:
     updater = Updater(token, request_kwargs={'proxy_url': proxy})
 else:
     updater = Updater(token)
-
-api = asf.IPC(ipc_address, ipc_password)
 
 
 cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
@@ -57,10 +56,36 @@ def restricted(func):
         return func(bot, update, *args, **kwargs)
     return wrapped
 
+class IPC(object):
+    def __init__(self, ipc='http://127.0.0.1:1242/', password='', timeout=20):
+        self.ipc = ipc
+        self.password = password
+        self.timeout = timeout
+        self.headers=dict()
+        if password:
+            auth_headers['Authentication'] = password
 
-def send(command):
+    def get_bot(self):
+        url = urljoin(ipc_address,'Api/Bot/ASF')
+        try:
+            resp = requests.get(url, headers=self.headers, timeout=self.timeout)
+        except requests.exceptions.ConnectionError as e:
+            raise e
+        return resp.json()['Result']
+
+    def command(self,cmd):
+        url = urljoin(ipc_address,'Api/command/')
+        try:
+            resp = requests.post(urljoin(url,cmd), headers=self.headers, timeout=self.timeout)
+        except requests.exceptions.ConnectionError as e:
+            raise e
+        return resp.json()['Result']
+
+asf=IPC(ipc=ipc_address, password=ipc_password)
+
+def send(cmd):
     try:
-        res = api.command(command)
+        res=asf.command(cmd)
     except Exception as e:
         if hasattr(e, 'message'):
             res = e.message
@@ -68,12 +93,12 @@ def send(command):
             res = e.__class__.__name__
     if not isinstance(res, str):
         res = str(res)
-    logger.info("执行命令：{}\n结果为：{}".format(command, res))
+    logger.info("执行命令：{}\n结果为：{}".format(cmd, res))
     return res
 
 
 def bots_menu(header=True, n_cols=4):
-    bots = api.get_bot('ASF')
+    bots=asf.get_bot()
     if len(bots) == 1:
         key=list(bots.keys())[0]
         return bots[key]['BotName']
