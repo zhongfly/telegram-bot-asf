@@ -63,7 +63,7 @@ class IPC(object):
         self.timeout = timeout
         self.headers=dict()
         if password:
-            auth_headers['Authentication'] = password
+            self.headers['Authentication'] = password
 
     def get_bot(self):
         url = urljoin(ipc_address,'Api/Bot/ASF')
