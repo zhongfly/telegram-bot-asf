@@ -1,0 +1,8 @@
+[telegram]
+token = "987654321:XXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+admin = [123456789]
+proxy =  "socks5h://127.0.0.1:1080/"
+
+[ipc]
+address = "http://127.0.0.1:1242/"
+password = "123"

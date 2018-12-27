@@ -7,13 +7,28 @@ import logging
 import re
 import requests
 from urllib.parse import urljoin
+import toml
+import sys
+import os
 
-token = '987654321:XXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-admin = [123456789]  # 多位管理员则为[123456789,987654321]
-ipc_address = 'http://127.0.0.1:1242/'
-ipc_password = ''
-use_proxy = True  # 如果不使用代理则为False
-proxy = 'socks5h://127.0.0.1:1080/'  # 'http://127.0.0.1:3128'
+
+if len(sys.argv) < 2:
+    print('使用默认路径载入配置文件')
+    conf='tgbot.toml'
+    if not os.path.exists(conf):
+        print('未找到配置文件')
+        sys.exit(1)
+else:
+    conf = sys.argv[1]
+    print('使用指定路径{}载入配置文件'.format(conf))
+
+with open(conf, encoding="utf-8") as f:
+    dict_conf = toml.load(f)
+token = dict_conf['telegram']['token']
+admin = dict_conf['telegram']['admin']
+proxy = dict_conf['telegram']['proxy']
+ipc_address = dict_conf['ipc']['address']
+ipc_password = dict_conf['ipc']['password']
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -21,7 +36,7 @@ logger = logging.getLogger(__name__)
 pattern_2fa = re.compile(r'^\s*!?2[fF][aA]( +.+)?\s*$')
 pattern_key = re.compile(r'([0-9,A-Z]{5}-){2,4}[0-9,A-Z]{5}')
 pattern_id = re.compile(r'([0-9]{3,10})')
-if use_proxy == True:
+if proxy != '':
     updater = Updater(token, request_kwargs={'proxy_url': proxy})
 else:
     updater = Updater(token)
@@ -71,7 +86,7 @@ class IPC(object):
             resp = requests.get(url, headers=self.headers, timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
             raise e
-        return resp.json()['Result']
+        return self.asf_response(resp)
 
     def command(self,cmd):
         url = urljoin(ipc_address,'Api/command/')
@@ -79,7 +94,18 @@ class IPC(object):
             resp = requests.post(urljoin(url,cmd), headers=self.headers, timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
             raise e
-        return resp.json()['Result']
+        return self.asf_response(resp)
+
+    def asf_response(self,resp):
+        code = resp.status_code
+        if code == 200:
+            return resp.json()['Result']
+        elif code == 400:
+            return resp.json()['Message']
+        elif code == 401:
+            return 'IPC密码错误'
+        elif code == 403:
+            return 'IPC密码错误,由于错误次数过多，请1小时后重试'
 
 asf=IPC(ipc=ipc_address, password=ipc_password)
 

@@ -3,3 +3,4 @@
 #pysocks
 python-telegram-bot>=10.1.0
 requests
+toml
