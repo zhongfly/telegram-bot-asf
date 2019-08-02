@@ -91,7 +91,7 @@ class IPC(object):
     def command(self,cmd):
         url = urljoin(ipc_address,'Api/command/')
         try:
-            resp = requests.post(urljoin(url,cmd), headers=self.headers, timeout=self.timeout)
+            resp = requests.post(url, data=json.dumps({'Command': cmd}), headers=self.headers, timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
             raise e
         return self.asf_response(resp)
