@@ -1,6 +1,6 @@
 # telegram-bot-asf
 [![PyPI](https://img.shields.io/badge/Python-3.6-blue.svg?style=flat-square)](https://pypi.python.org/pypi/ASF-IPC)
-[![ASF](https://img.shields.io/badge/ASF-3.4.0.5%20supported-orange.svg?style=flat-square)](https://github.com/JustArchi/ArchiSteamFarm)
+[![ASF](https://img.shields.io/badge/ASF-4.0.3.0%20supported-orange.svg?style=flat-square)](https://github.com/JustArchi/ArchiSteamFarm)
 
 使用telegram bot管理ASF  
 参考[ASF_IPC](https://github.com/deluxghost/ASF_IPC)，[deluxghost/telegram-asf](https://github.com/deluxghost/telegram-asf)，[BenZinaDaze/tg_asf_bot](https://github.com/BenZinaDaze/tg_asf_bot)  
