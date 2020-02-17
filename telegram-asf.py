@@ -14,7 +14,7 @@ import os
 
 if len(sys.argv) < 2:
     print('使用默认路径载入配置文件')
-    conf='tgbot.toml'
+    conf = 'tgbot.toml'
     if not os.path.exists(conf):
         print('未找到配置文件')
         sys.exit(1)
@@ -44,7 +44,9 @@ else:
 
 cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='redeem', callback_data='redeem'),
-     InlineKeyboardButton(text='addlicense', callback_data='addlicense')],
+     InlineKeyboardButton(text='addlicense sub',
+                          callback_data='addlicense sub'),
+     InlineKeyboardButton(text='addlicense app', callback_data='addlicense app')],
     [InlineKeyboardButton(text='start', callback_data='start'),
      InlineKeyboardButton(text='stop', callback_data='stop'),
      InlineKeyboardButton(text='pause', callback_data='pause'),
@@ -57,7 +59,7 @@ cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 
-type1 = ['addlicense', 'redeem']
+type1 = ['addlicense sub', 'addlicense app', 'redeem']
 type2 = ['start', 'stop', 'pause', 'resume', '2fa', '2faok']
 
 
@@ -71,33 +73,38 @@ def restricted(func):
         return func(bot, update, *args, **kwargs)
     return wrapped
 
+
 class IPC(object):
     def __init__(self, ipc='http://127.0.0.1:1242/', password='', timeout=20):
         self.ipc = ipc
         self.password = password
         self.timeout = timeout
-        self.headers=dict()
+        self.headers = dict()
         if password:
             self.headers['Authentication'] = password
 
     def get_bot(self):
-        url = urljoin(ipc_address,'Api/Bot/ASF')
+        url = urljoin(ipc_address, 'Api/Bot/ASF')
         try:
-            resp = requests.get(url, headers=self.headers, timeout=self.timeout)
+            resp = requests.get(url, headers=self.headers,
+                                timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
             raise e
         return self.asf_response(resp)
 
-    def command(self,cmd):
-        url = urljoin(ipc_address,'Api/Command')
+    def command(self, cmd):
+        url = urljoin(ipc_address, 'Api/Command')
         try:
-            body = {"Command": cmd}
-            resp = requests.post(url, headers=self.headers, timeout=self.timeout, data=json.dumps(body))
+            body = '{"Command":"'+cmd+'"}'
+            headers = self.headers
+            headers['Content-Type'] = 'application/json'
+            resp = requests.post(url, headers=headers,
+                                 timeout=self.timeout, data=body)
         except requests.exceptions.ConnectionError as e:
             raise e
         return self.asf_response(resp)
 
-    def asf_response(self,resp):
+    def asf_response(self, resp):
         code = resp.status_code
         if code == 200:
             return resp.json()['Result']
@@ -108,11 +115,13 @@ class IPC(object):
         elif code == 403:
             return 'IPC密码错误,由于错误次数过多，请1小时后重试'
 
-asf=IPC(ipc=ipc_address, password=ipc_password)
+
+asf = IPC(ipc=ipc_address, password=ipc_password)
+
 
 def send(cmd):
     try:
-        res=asf.command(cmd)
+        res = asf.command(cmd)
     except Exception as e:
         if hasattr(e, 'message'):
             res = e.message
@@ -125,9 +134,9 @@ def send(cmd):
 
 
 def bots_menu(header=True, n_cols=4):
-    bots=asf.get_bot()
+    bots = asf.get_bot()
     if len(bots) == 1:
-        key=list(bots.keys())[0]
+        key = list(bots.keys())[0]
         return bots[key]['BotName']
     else:
         buttons = []
@@ -237,8 +246,10 @@ def deal_command(bot, chat_id, job_queue, chat_data):
         if chat_data['type'] == 'redeem':
             text = '当前操作的BOT为: ' + chat_data['bot'] + \
                 ',\n请输入KEY!\n发送 /cancel 退出'
-        elif chat_data['type'] == 'addlicense':
-            text = '请输入appID 或者 subID !\n发送 /cancel 退出'
+        elif chat_data['type'] == 'addlicense sub':
+            text = '请输入subID !\n发送 /cancel 退出'
+        elif chat_data['type'] == 'addlicense app':
+            text = '请输入appID !\n发送 /cancel 退出'
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text=text, reply_markup=reply_markup)
 #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
@@ -288,15 +299,21 @@ def others(bot, update, chat_data):
         bot.editMessageText(chat_id=chat_id, message_id=msg,
                             text='已输入\n发送 /cancel 退出')
         del chat_data['msg']
+
     if chat_data['type'] == 'redeem':
         if pattern_key.match(args) == None:
             update.message.reply_text(text='KEY输入错误，请重新输入', quote=True)
             return OTHERS
-    elif chat_data['type'] == 'addlicense':
+    elif chat_data['type'] == 'addlicense sub' or chat_data['type'] == 'addlicense app':
         if pattern_id.match(args) == None:
             update.message.reply_text(
                 text='appID 或者 subID输入错误，请重新输入', quote=True)
             return OTHERS
+        if chat_data['type'] == 'addlicense app':
+            args = "app/"+args
+        else:
+            args = "sub/"+args
+        chat_data['type'] = "addlicense"
     command = chat_data['type']+' '+chat_data['bot']+' '+args
     res = send(command)
     update.message.reply_text(text=res, quote=True)
