@@ -15,7 +15,7 @@ git clone https://github.com/zhongfly/telegram-bot-asf.git
 4,如使用socks代理，按注释修改requirments  
 5,安装依赖
 ```shell
-pip install -r requirements.txt  
+pip3 install -r requirements.txt  
 ```
 6,修改配置文件tgbot.toml  
 7,运行telegram-asf.py（使用默认配置文件路径）  
