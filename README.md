@@ -32,7 +32,7 @@ python3 telegram-asf.py YOUR_CONFIG.toml
 ```ini
 [telegram]
 token = "987654321:XXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-# 多位管理员用逗号隔开，例如[123456789,987654321,4564649]
+# 多位管理员用逗号隔开，例如[123456789,987654321,4564649]；此处需填入你自己的而非bot的telegram数字id(telegram中使用bot：userinfobot以获取您的数字id)。
 admin = [123456789]
 # socks5代理如下示例；http代理则类似填入"http://127.0.0.1:3128"；不使用代理则留空，只保留引号""
 proxy =  "socks5h://127.0.0.1:1080/"
