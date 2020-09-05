@@ -1,6 +1,6 @@
 # encoding:UTF-8
 # python3.6
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Job, CallbackQueryHandler, ConversationHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ConversationHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import wraps
 import logging
@@ -10,7 +10,6 @@ from urllib.parse import urljoin
 import toml
 import sys
 import os
-
 
 if len(sys.argv) < 2:
     print('使用默认路径载入配置文件')
@@ -37,10 +36,9 @@ pattern_2fa = re.compile(r'^\s*!?2[fF][aA]( +.+)?\s*$')
 pattern_key = re.compile(r'([0-9,A-Z]{5}-){2,4}[0-9,A-Z]{5}')
 pattern_id = re.compile(r'([0-9]{3,10})')
 if proxy != '':
-    updater = Updater(token, request_kwargs={'proxy_url': proxy})
+    updater = Updater(token, request_kwargs={'proxy_url': proxy}, use_context=True)
 else:
-    updater = Updater(token)
-
+    updater = Updater(token, use_context=True)
 
 cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='redeem', callback_data='redeem'),
@@ -58,19 +56,19 @@ cmd_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='取消', callback_data='cancel')]
 ])
 
-
 type1 = ['addlicense sub', 'addlicense app', 'redeem']
 type2 = ['start', 'stop', 'pause', 'resume', '2fa', '2faok']
 
 
 def restricted(func):
     @wraps(func)
-    def wrapped(bot, update, *args, **kwargs):
+    def wrapped(update, context, *args, **kwargs):
         user_id = update.effective_user.id
         if user_id not in admin:
             update.message.reply_text('你没有操作BOT的权限', quote=True)
             return -1
-        return func(bot, update, *args, **kwargs)
+        return func(update, context, *args, **kwargs)
+
     return wrapped
 
 
@@ -95,7 +93,7 @@ class IPC(object):
     def command(self, cmd):
         url = urljoin(ipc_address, 'Api/Command')
         try:
-            body = '{"Command":"'+cmd+'"}'
+            body = '{"Command":"' + cmd + '"}'
             headers = self.headers
             headers['Content-Type'] = 'application/json'
             resp = requests.post(url, headers=headers,
@@ -146,7 +144,7 @@ def bots_menu(header=True, n_cols=4):
         menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
         header_button = [InlineKeyboardButton(
             text='ASF（即所有bot）', callback_data='asf'), ]
-        if header == True:
+        if header:
             menu.insert(0, header_button)
         footer_button = [InlineKeyboardButton(
             text='返回', callback_data='back'), ]
@@ -158,47 +156,51 @@ def bots_menu(header=True, n_cols=4):
 TYPE, BOTNAME, OTHERS = range(3)
 
 
-def deljob(chat_data):
-    if 'job' in chat_data:
-        job = chat_data['job']
+def deljob(context):
+    if 'job' in context.chat_data:
+        job = context.chat_data['job']
         job.schedule_removal()
-        del chat_data['job']
+        del context.chat_data['job']
 
 
-def timeout(bot, job):
-    bot.editMessageText(
+def timeout(context):
+    job = context.job
+    context.bot.editMessageText(
         chat_id=job.context[0], message_id=job.context[1], text='2min无回应\n已结束等待')
     return -1
 
 
 @restricted
-def start(bot, update, job_queue, chat_data):
+def start(update, context):
     logger.info("%s 开始会话。", update.message.from_user.first_name)
     chat_id = update.message.chat_id
-    msg = bot.sendMessage(text='请选择命令\n发送 /cancel 退出',
-                          chat_id=chat_id, reply_markup=cmd_menu)
-    job = job_queue.run_once(timeout, 120, context=(chat_id, msg.message_id))
-    chat_data['msg'] = msg.message_id
-    chat_data['job'] = job
+    msg = context.bot.sendMessage(text='请选择命令\n发送 /cancel 退出',
+                                  chat_id=chat_id, reply_markup=cmd_menu)
+    job = context.job_queue.run_once(timeout, 120, context=(chat_id, msg.message_id))
+    context.chat_data['msg'] = msg.message_id
+    context.chat_data['job'] = job
     return TYPE
 
 
-def mfa_timeout(bot, job):
-    bot.editMessageText(
+def mfa_timeout(context):
+    job = context.job
+    context.bot.editMessageText(
         chat_id=job.context[0], message_id=job.context[1], text='[2FA Deleted]')
 
 
-def cmdtype(bot, update, job_queue, chat_data):
+def cmdtype(update, context):
+    bot = context.bot
+    chat_data = context.chat_data
     query = update.callback_query
     chat_id = query.message.chat_id
-    deljob(chat_data)
+    deljob(context)
     cmd_type = query.data
     if query.data == 'cancel':
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text='已取消')
         logger.info("取消操作，结束会话。")
         return ConversationHandler.END
-    chat_data['type'] = query.data
+    context.chat_data['type'] = query.data
     if cmd_type in type1 or cmd_type in type2:
         if cmd_type == 'redeem':
             reply_markup = bots_menu(header=False)
@@ -207,12 +209,12 @@ def cmdtype(bot, update, job_queue, chat_data):
         chat_data['botname_markup'] = reply_markup
         if isinstance(reply_markup, str):
             chat_data['bot'] = reply_markup
-            return deal_command(bot, chat_id, job_queue, chat_data)
+            return deal_command(context, chat_id)
         else:
             bot.editMessageText(
                 chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
-    #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
-            job = job_queue.run_once(
+            #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
+            job = context.job_queue.run_once(
                 timeout, 120, context=(chat_id, chat_data['msg']))
             chat_data['job'] = job
             return BOTNAME
@@ -223,75 +225,81 @@ def cmdtype(bot, update, job_queue, chat_data):
         return ConversationHandler.END
 
 
-def botname(bot, update, job_queue, chat_data):
+def botname(update, context):
+    bot = context.bot
+    chat_data = context.chat_data
     query = update.callback_query
     chat_id = query.message.chat_id
-    deljob(chat_data)
+    deljob(context)
     if query.data == 'back':
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text='请选择命令\n发送 /cancel 退出', reply_markup=cmd_menu)
-#        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=cmd_menu)
-        job = job_queue.run_once(
+        job = context.job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return TYPE
     chat_data['bot'] = query.data
-    return deal_command(bot, chat_id, job_queue, chat_data)
+    return deal_command(context, chat_id)
 
 
-def deal_command(bot, chat_id, job_queue, chat_data):
+def deal_command(context, chat_id):
+    bot = context.bot
+    chat_data = context.chat_data
     if chat_data['type'] in type1:
         reply_markup = InlineKeyboardMarkup(
             [[InlineKeyboardButton(text='返回', callback_data='back'), ], ])
         if chat_data['type'] == 'redeem':
             text = '当前操作的BOT为: ' + chat_data['bot'] + \
-                ',\n请输入KEY!\n发送 /cancel 退出'
+                   ',\n请输入KEY!\n发送 /cancel 退出'
         elif chat_data['type'] == 'addlicense sub':
             text = '请输入subID !\n发送 /cancel 退出'
         elif chat_data['type'] == 'addlicense app':
             text = '请输入appID !\n发送 /cancel 退出'
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text=text, reply_markup=reply_markup)
-#        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
-        job = job_queue.run_once(
+        job = context.job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return OTHERS
     else:
-        command = chat_data['type']+' '+chat_data['bot']
+        command = chat_data['type'] + ' ' + chat_data['bot']
         res = send(command)
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text=res)
         if pattern_2fa.match(command):
-            job_queue.run_once(mfa_timeout, 15, context=(
+            context.job_queue.run_once(mfa_timeout, 15, context=(
                 chat_id, chat_data['msg']))
         return ConversationHandler.END
 
 
-def back2botname(bot, update, job_queue, chat_data):
-    deljob(chat_data)
+def back2botname(update, context):
+    bot = context.bot
+    chat_data = context.chat_data
+    deljob(context)
     query = update.callback_query
     chat_id = query.message.chat_id
     reply_markup = chat_data['botname_markup']
     if isinstance(reply_markup, str):
         bot.editMessageText(text='请选择命令\n发送 /cancel 退出',
                             chat_id=chat_id, message_id=chat_data['msg'], reply_markup=cmd_menu)
-        job = job_queue.run_once(
+        job = context.job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return TYPE
     else:
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
-    #    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
-        job = job_queue.run_once(
+        #    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
+        job = context.job_queue.run_once(
             timeout, 120, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return BOTNAME
 
 
-def others(bot, update, chat_data):
-    deljob(chat_data)
+def others(update, context):
+    bot = context.bot
+    chat_data = context.chat_data
+    deljob(context)
     chat_id = update.message.chat_id
     args = update.message.text
     if 'msg' in chat_data:
@@ -301,27 +309,27 @@ def others(bot, update, chat_data):
         del chat_data['msg']
 
     if chat_data['type'] == 'redeem':
-        if pattern_key.match(args) == None:
+        if pattern_key.match(args) is None:
             update.message.reply_text(text='KEY输入错误，请重新输入', quote=True)
             return OTHERS
     elif chat_data['type'] == 'addlicense sub' or chat_data['type'] == 'addlicense app':
-        if pattern_id.match(args) == None:
+        if pattern_id.match(args) is None:
             update.message.reply_text(
                 text='appID 或者 subID输入错误，请重新输入', quote=True)
             return OTHERS
         if chat_data['type'] == 'addlicense app':
-            args = "app/"+args
+            args = "app/" + args
         else:
-            args = "sub/"+args
+            args = "sub/" + args
         chat_data['type'] = "addlicense"
-    command = chat_data['type']+' '+chat_data['bot']+' '+args
+    command = chat_data['type'] + ' ' + chat_data['bot'] + ' ' + args
     res = send(command)
     update.message.reply_text(text=res, quote=True)
     return ConversationHandler.END
 
 
-def cancel(bot, update, chat_data):
-    deljob(chat_data)
+def cancel(update, context):
+    deljob(context.chat_data)
     logger.info("%s 取消操作，结束会话。", update.message.from_user.first_name)
     update.message.reply_text('已取消', quote=True)
     return ConversationHandler.END
@@ -329,18 +337,18 @@ def cancel(bot, update, chat_data):
 
 start_handler = ConversationHandler(
     entry_points=[CommandHandler(
-        'start', start, pass_job_queue=True, pass_chat_data=True)],
+        'start', start)],
 
     states={
-        TYPE: [CallbackQueryHandler(cmdtype, pass_job_queue=True, pass_chat_data=True)],
+        TYPE: [CallbackQueryHandler(cmdtype)],
 
-        BOTNAME: [CallbackQueryHandler(botname, pass_job_queue=True, pass_chat_data=True)],
+        BOTNAME: [CallbackQueryHandler(botname)],
 
-        OTHERS: [MessageHandler(Filters.text, others, pass_chat_data=True),
-                 CallbackQueryHandler(back2botname, pass_job_queue=True, pass_chat_data=True)],
+        OTHERS: [MessageHandler(Filters.text, others),
+                 CallbackQueryHandler(back2botname)],
     },
 
-    fallbacks=[CommandHandler('cancel', cancel, pass_chat_data=True)],
+    fallbacks=[CommandHandler('cancel', cancel)],
 
     allow_reentry=True,
 
@@ -349,22 +357,22 @@ start_handler = ConversationHandler(
 
 
 @restricted
-def reply(bot, update, job_queue):
+def reply(update, context):
     chat_id = update.message.chat_id
     command = update.message.text
     res = send(command)
     msg = update.message.reply_text(text=res, quote=True)
     if pattern_2fa.match(command):
-        job_queue.run_once(mfa_timeout, 15, context=(chat_id, msg.message_id))
+        context.job_queue.run_once(mfa_timeout, 15, context=(chat_id, msg.message_id))
 
 
-def error(bot, update, error):
-    logger.warn('Update "%s" caused error "%s"' % (update, error))
+def error(update, context):
+    logger.warning('Update "%s" caused error "%s"' % (update, context.error))
 
 
 updater.dispatcher.add_handler(start_handler)
 updater.dispatcher.add_handler(MessageHandler(
-    Filters.text, reply, pass_job_queue=True))
+    Filters.text, reply))
 updater.dispatcher.add_error_handler(error)
 
 updater.start_polling()
