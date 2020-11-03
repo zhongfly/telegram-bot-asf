@@ -9,7 +9,10 @@ import requests
 from urllib.parse import urljoin
 import toml
 import sys
+from json import dumps
 import os
+
+TIMEOUT = 120
 
 if len(sys.argv) < 2:
     print('使用默认路径载入配置文件')
@@ -19,7 +22,7 @@ if len(sys.argv) < 2:
         sys.exit(1)
 else:
     conf = sys.argv[1]
-    print('使用指定路径{}载入配置文件'.format(conf))
+    print(f'使用指定路径{conf}载入配置文件')
 
 with open(conf, encoding="utf-8") as f:
     dict_conf = toml.load(f)
@@ -36,7 +39,8 @@ pattern_2fa = re.compile(r'^\s*!?2[fF][aA]( +.+)?\s*$')
 pattern_key = re.compile(r'([0-9,A-Z]{5}-){2,4}[0-9,A-Z]{5}')
 pattern_id = re.compile(r'([0-9]{3,10})')
 if proxy != '':
-    updater = Updater(token, request_kwargs={'proxy_url': proxy}, use_context=True)
+    updater = Updater(token, request_kwargs={
+                      'proxy_url': proxy}, use_context=True)
 else:
     updater = Updater(token, use_context=True)
 
@@ -93,7 +97,7 @@ class IPC(object):
     def command(self, cmd):
         url = urljoin(ipc_address, 'Api/Command')
         try:
-            body = '{"Command":"' + cmd + '"}'
+            body = dumps({"Command": cmd})
             headers = self.headers
             headers['Content-Type'] = 'application/json'
             resp = requests.post(url, headers=headers,
@@ -127,7 +131,7 @@ def send(cmd):
             res = e.__class__.__name__
     if not isinstance(res, str):
         res = str(res)
-    logger.info("执行命令：{}\n结果为：{}".format(cmd, res))
+    logger.info(f"执行命令：{cmd}\n结果为：{res}")
     return res
 
 
@@ -172,11 +176,12 @@ def timeout(context):
 
 @restricted
 def start(update, context):
-    logger.info("%s 开始会话。", update.message.from_user.first_name)
+    logger.info(f"{update.message.from_user.first_name}开始会话。", )
     chat_id = update.message.chat_id
     msg = context.bot.sendMessage(text='请选择命令\n发送 /cancel 退出',
                                   chat_id=chat_id, reply_markup=cmd_menu)
-    job = context.job_queue.run_once(timeout, 120, context=(chat_id, msg.message_id))
+    job = context.job_queue.run_once(
+        timeout, TIMEOUT, context=(chat_id, msg.message_id))
     context.chat_data['msg'] = msg.message_id
     context.chat_data['job'] = job
     return TYPE
@@ -215,7 +220,7 @@ def cmdtype(update, context):
                 chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
             #        bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'],reply_markup=reply_markup)
             job = context.job_queue.run_once(
-                timeout, 120, context=(chat_id, chat_data['msg']))
+                timeout, TIMEOUT, context=(chat_id, chat_data['msg']))
             chat_data['job'] = job
             return BOTNAME
     else:
@@ -235,7 +240,7 @@ def botname(update, context):
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text='请选择命令\n发送 /cancel 退出', reply_markup=cmd_menu)
         job = context.job_queue.run_once(
-            timeout, 120, context=(chat_id, chat_data['msg']))
+            timeout, TIMEOUT, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return TYPE
     chat_data['bot'] = query.data
@@ -258,11 +263,11 @@ def deal_command(context, chat_id):
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text=text, reply_markup=reply_markup)
         job = context.job_queue.run_once(
-            timeout, 120, context=(chat_id, chat_data['msg']))
+            timeout, TIMEOUT, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return OTHERS
     else:
-        command = chat_data['type'] + ' ' + chat_data['bot']
+        command = f"{chat_data['type']} {chat_data['bot']}"
         res = send(command)
         bot.editMessageText(
             chat_id=chat_id, message_id=chat_data['msg'], text=res)
@@ -283,7 +288,7 @@ def back2botname(update, context):
         bot.editMessageText(text='请选择命令\n发送 /cancel 退出',
                             chat_id=chat_id, message_id=chat_data['msg'], reply_markup=cmd_menu)
         job = context.job_queue.run_once(
-            timeout, 120, context=(chat_id, chat_data['msg']))
+            timeout, TIMEOUT, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return TYPE
     else:
@@ -291,7 +296,7 @@ def back2botname(update, context):
             chat_id=chat_id, message_id=chat_data['msg'], text='请选择BOT\n发送 /cancel 退出', reply_markup=reply_markup)
         #    bot.editMessageReplyMarkup(chat_id=chat_id, message_id=chat_data['msg'], reply_markup=reply_markup)
         job = context.job_queue.run_once(
-            timeout, 120, context=(chat_id, chat_data['msg']))
+            timeout, TIMEOUT, context=(chat_id, chat_data['msg']))
         chat_data['job'] = job
         return BOTNAME
 
@@ -318,11 +323,11 @@ def others(update, context):
                 text='appID 或者 subID输入错误，请重新输入', quote=True)
             return OTHERS
         if chat_data['type'] == 'addlicense app':
-            args = "app/" + args
+            args = f"app/{args}"
         else:
-            args = "sub/" + args
+            args = f"sub/{args}"
         chat_data['type'] = "addlicense"
-    command = chat_data['type'] + ' ' + chat_data['bot'] + ' ' + args
+    command = f"{chat_data['type']} {chat_data['bot']} {args}"
     res = send(command)
     update.message.reply_text(text=res, quote=True)
     return ConversationHandler.END
@@ -330,7 +335,7 @@ def others(update, context):
 
 def cancel(update, context):
     deljob(context.chat_data)
-    logger.info("%s 取消操作，结束会话。", update.message.from_user.first_name)
+    logger.info(f"{update.message.from_user.first_name} 取消操作，结束会话。")
     update.message.reply_text('已取消', quote=True)
     return ConversationHandler.END
 
@@ -352,7 +357,7 @@ start_handler = ConversationHandler(
 
     allow_reentry=True,
 
-    conversation_timeout=120,
+    conversation_timeout=TIMEOUT,
 )
 
 
@@ -363,7 +368,8 @@ def reply(update, context):
     res = send(command)
     msg = update.message.reply_text(text=res, quote=True)
     if pattern_2fa.match(command):
-        context.job_queue.run_once(mfa_timeout, 15, context=(chat_id, msg.message_id))
+        context.job_queue.run_once(
+            mfa_timeout, 15, context=(chat_id, msg.message_id))
 
 
 def error(update, context):
