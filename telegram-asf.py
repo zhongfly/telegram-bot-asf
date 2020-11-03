@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 import toml
 import sys
 import os
+from json import dumps
 
 if len(sys.argv) < 2:
     print('使用默认路径载入配置文件')
@@ -93,7 +94,7 @@ class IPC(object):
     def command(self, cmd):
         url = urljoin(ipc_address, 'Api/Command')
         try:
-            body = '{"Command":"' + cmd + '"}'
+            body = dumps({"Command": cmd})
             headers = self.headers
             headers['Content-Type'] = 'application/json'
             resp = requests.post(url, headers=headers,
