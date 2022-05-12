@@ -33,7 +33,7 @@ ipc_password = dict_conf['ipc']['password']
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-pattern_2fa = re.compile(r'^\s*!?2[fF][aA]( +.+)?\s*$')
+pattern_2fa_command = re.compile(r'.?2fa( |$)')
 pattern_key = re.compile(r'([0-9,A-Z]{5}-){2,4}[0-9,A-Z]{5}')
 pattern_id = re.compile(r'([0-9]{3,10})')
 if proxy != '':
@@ -265,11 +265,15 @@ def deal_command(context, chat_id):
     else:
         command = chat_data['type'] + ' ' + chat_data['bot']
         res = send(command)
-        bot.editMessageText(
-            chat_id=chat_id, message_id=chat_data['msg'], text=res)
-        if pattern_2fa.match(command):
-            context.job_queue.run_once(mfa_timeout, 15, context=(
+        if pattern_2fa_command.match(command):
+            res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`',res)
+            bot.editMessageText(
+                chat_id=chat_id, message_id=chat_data['msg'], text=res)     
+            context.job_queue.run_once(mfa_timeout, 30, context=(
                 chat_id, chat_data['msg']))
+        else:
+            bot.editMessageText(
+                chat_id=chat_id, message_id=chat_data['msg'], text=res)            
         return ConversationHandler.END
 
 
@@ -362,9 +366,12 @@ def reply(update, context):
     chat_id = update.message.chat_id
     command = update.message.text
     res = send(command)
-    msg = update.message.reply_text(text=res, quote=True)
-    if pattern_2fa.match(command):
-        context.job_queue.run_once(mfa_timeout, 15, context=(chat_id, msg.message_id))
+    if pattern_2fa_command.match(command):
+        res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`',res)
+        msg = update.message.reply_text(text=res, quote=True)
+        context.job_queue.run_once(mfa_timeout, 30, context=(chat_id, msg.message_id))
+    else:
+        msg = update.message.reply_text(text=res, quote=True)
 
 
 def error(update, context):
