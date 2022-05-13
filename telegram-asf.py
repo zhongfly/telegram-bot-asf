@@ -267,9 +267,9 @@ def deal_command(context, chat_id):
         command = chat_data['type'] + ' ' + chat_data['bot']
         res = send(command)
         if pattern_2fa_command.match(command):
-            res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`',res)
+            res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`', escape_markdown(res, version=2))
             bot.editMessageText(
-                chat_id=chat_id, message_id=chat_data['msg'], text=escape_markdown(res, version=2), parse_mode='MarkdownV2')     
+                chat_id=chat_id, message_id=chat_data['msg'], text=res, parse_mode='MarkdownV2')     
             context.job_queue.run_once(mfa_timeout, 30, context=(
                 chat_id, chat_data['msg']))
         else:
@@ -368,8 +368,8 @@ def reply(update, context):
     command = update.message.text
     res = send(command)
     if pattern_2fa_command.match(command):
-        res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`',res)
-        msg = update.message.reply_text(text=escape_markdown(res, version=2), quote=True, parse_mode='MarkdownV2')
+        res = re.sub(r'([A-Z0-9]{5}$)',r'`\1`', escape_markdown(res, version=2))
+        msg = update.message.reply_text(text=res, quote=True, parse_mode='MarkdownV2')
         context.job_queue.run_once(mfa_timeout, 30, context=(chat_id, msg.message_id))
     else:
         msg = update.message.reply_text(text=res, quote=True)
