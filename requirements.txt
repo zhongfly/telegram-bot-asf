@@ -1,6 +1,6 @@
 # encoding:UTF-8
 #if you want to use socks5 proxy,remove the # in the next line
 #pysocks
-python-telegram-bot >= 12.8
+python-telegram-bot >= 12.8,<20.0
 requests
 toml
